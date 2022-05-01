@@ -1,1 +1,98 @@
-qsdq
+<body style="background-color: rgb(250, 250, 250);">
+
+</body>
+
+<script src="..\biblio\p5.min.js"></script>
+
+<script>
+
+class Case {
+
+    constructor(x,y,size,color) {
+
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.color = color;
+
+    }
+
+    getInfos() {
+
+        return [this.x,this.y,this.size,this.color];
+
+    }
+
+}
+
+
+</script>
+
+<script>
+
+    //rect(30, 20, 55, 55, 20);
+
+    //h:20
+    //l:10
+
+    var all_cases = [];
+    var all_cases_object = [];
+
+    function generateCases(x,y,ec,r,w_h,quant){
+
+
+        for(var i = 0;i<quant[1];i++){
+
+            for(var j = 0;j<quant[0];j++){
+
+                const act_case = [x*(1)+(ec+w_h)*j,y*(1)+(ec+w_h)*i,r,w_h];
+
+                all_cases_object.push(new Case(act_case[0],act_case[1],act_case[3],255))
+                all_cases.push(act_case);
+
+            }
+
+        }
+
+
+    }
+
+    function setup() {
+
+        const taille = [350,641];
+        const cnv = createCanvas(taille[0], taille[1]);
+        const x = (windowWidth - width) / 2;
+        const y = (windowHeight - height) / 2;
+        cnv.position(x, y);
+
+        const ec = 0;
+        const rayon = 1;
+        const size = 28;
+        const dim_tetris = [10,20];
+        const dep_pos = [taille[0]/2-(ec*(dim_tetris[0]-1)+size*dim_tetris[0])/2,taille[1]/2-(ec*(dim_tetris[1]-1)+size*dim_tetris[1])/2];
+
+        generateCases(dep_pos[0],dep_pos[1],ec,rayon,size,dim_tetris)
+
+    }
+    
+
+    function draw() {
+      
+        background(240)
+
+        for(var i=0;i<all_cases.length;i++){
+
+            const act_cs = all_cases[i];
+
+            strokeWeight(1);
+            stroke(205);
+            rect(act_cs[0],act_cs[1],act_cs[3],act_cs[3],act_cs[2])
+
+        }
+        
+    }
+    
+    
+
+
+</script>
