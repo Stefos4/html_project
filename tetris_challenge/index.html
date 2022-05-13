@@ -23,6 +23,22 @@ const default_sobject_color = [60,55,47];
 const default_zobject_color = [100,75,160];
 const default_invtobject_color = [75,75,16];
 
+const CODE_MOVE_BAS = "MOVE_BAS";
+const CODE_MOVE_LEFT = "MOVE_LEFT";
+const CODE_MOVE_RIGHT = "MOVE_RIGHT";
+const CODE_ROTATE = "MOVE_ROT";
+
+const COEF_HEIGHT = 3;
+const COEF_HOLES = 4;
+const COEF_LINES = 2.5;
+const COEF_ISOL_CASE = 2;
+const COEF_ISOL_COL = 4;
+const COEF_DEC = 1;
+
+var parent_navigator = [];
+
+var clearedLines = 0;
+
 </script>
 
 <script>
@@ -49,216 +65,54 @@ class Case {
 
     }
 
-}
+    copy(){
 
-class Carre{
+        let cs = new Case(this.x,this.y,this.size,this.color,this.rounded,this.nbr_col,this.nbr_lg)
+        cs.isTaken = this.isTaken;
+        cs.tkBy = this.tkBy;
 
-    constructor(positions,color=default_carre_color){
-
-        this.cases = positions;
-        this.colors = color;
-
-    }
-
-    plantGrownd(){
-
-        for(let i=0;i<this.cases.length;i++){
-
-            this.cases[i].color = this.colors;
-            this.cases[i].isTaken = true;
-            this.cases[i].tkBy = this;
-
-        }
+        return cs;
 
     }
 
     reset(){
 
-        for(let i=0;i<this.cases.length;i++){
-
-            this.cases[i].color = default_case_color;
-            this.cases[i].isTaken = false;
-
-        }
+        this.color = default_case_color;
+        this.isTaken = false;
+        this.tkBy = null;
 
     }
 
-    moveEnBas(){
+    beLike(case_){
 
-        let cases_les_plus_bas = [];
-
-        for(let i=0;i<this.cases.length;i++){
-
-            if (cases_les_plus_bas.length!=0){
-
-                if(this.cases[i].nbr_lg>cases_les_plus_bas[0].nbr_lg){
-
-                    cases_les_plus_bas = [this.cases[i]]
-
-                } else if(this.cases[i].nbr_lg==cases_les_plus_bas[0].nbr_lg){
-
-                    cases_les_plus_bas.push(this.cases[i])
-
-                }
-
-            } else {
-
-                cases_les_plus_bas.push(this.cases[i])
-
-            }
-
-        }
-
-        let can_move = true;
-
-        for(var i=0;i<cases_les_plus_bas.length;i++){
-
-            const case_suiv = getCaseByNbr(cases_les_plus_bas[i].nbr_col,cases_les_plus_bas[i].nbr_lg+1,all_cases_object);
-
-            if(case_suiv!=null){
-
-                if(case_suiv.isTaken===true){
-
-                    can_move = false;
-
-                }
-
-            } else {
-
-                can_move = false;
-                break;
-
-            }
-
-        }
-
-        if(can_move){
-
-            var new_position = [];
-            
-            for(var i=0;i<this.cases.length;i++){
-
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
-                
-
-            }
-
-            this.reset()
-
-            this.cases = new_position;
-
-        }
-
-        return can_move;
-        
-    }
-
-    moveEnLeft(){
-
-        let can_move = true;
-
-        for(var i=0;i<this.cases.length;i++){
-
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
-
-            if(case_suiv!=null){
-
-                if(case_suiv.isTaken===true){
-
-                    if(case_suiv.tkBy!=this){
-                    
-                        can_move = false;
-                        break;
-
-                    }
-
-                }
-
-            } else {
-
-                can_move = false;
-                break;
-
-            }
-
-        }
-
-        if(can_move){
-
-            var new_position = [];
-            
-            for(var i=0;i<this.cases.length;i++){
-
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
-                
-            }
-
-            this.reset()
-
-            this.cases = new_position;
-
-        }
+        this.color = case_.color;
+        this.isTaken = case_.isTaken;
+        this.tkBy = case_.tkBy;
 
     }
 
-    moveEnRight(){
+    isEqual(case_){
 
-        let can_move = true;
-
-        for(var i=0;i<this.cases.length;i++){
-
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
-
-            if(case_suiv!=null){
-
-                if(case_suiv.isTaken===true){
-
-                    if(case_suiv.tkBy!=this){
-                    
-                        can_move = false;
-                        break;
-
-                    }
-
-                }
-
-            } else {
-
-                can_move = false;
-                break;
-
-            }
-
-        }
-
-        if(can_move){
-
-            var new_position = [];
+        if(this.nbr_col==case_.nbr_col && this.isTaken==case_.isTaken){
             
-            for(var i=0;i<this.cases.length;i++){
-
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
-                
-            }
-
-            this.reset()
-
-            this.cases = new_position;
+            return true;
 
         }
+
+        return false;
 
     }
 
 }
 
-class Bar{
+class Carre{
 
-    constructor(positions,color=default_bar_color,shape){
+    constructor(positions,color=default_carre_color,environement){
 
         this.cases = positions;
         this.colors = color;
-        this.type = shape;
-        this.typeMax = 3
+        this.environement = environement;
+        this.moves = [];
 
     }
 
@@ -316,7 +170,7 @@ class Bar{
 
         for(var i=0;i<cases_les_plus_bas.length;i++){
 
-            const case_suiv = getCaseByNbr(cases_les_plus_bas[i].nbr_col,cases_les_plus_bas[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(cases_les_plus_bas[i].nbr_col,cases_les_plus_bas[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
@@ -341,10 +195,245 @@ class Bar{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
+
+            this.moves.push(CODE_MOVE_BAS);
+
+            this.reset();
+
+            this.cases = new_position;
+
+        }
+
+        return can_move;
+        
+    }
+
+    moveEnLeft(){
+
+        let can_move = true;
+
+        for(var i=0;i<this.cases.length;i++){
+
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
+
+            if(case_suiv!=null){
+
+                if(case_suiv.isTaken===true){
+
+                    if(case_suiv.tkBy!=this){
+                    
+                        can_move = false;
+                        break;
+
+                    }
+
+                }
+
+            } else {
+
+                can_move = false;
+                break;
+
+            }
+
+        }
+
+        if(can_move){
+
+            var new_position = [];
+            
+            for(var i=0;i<this.cases.length;i++){
+
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
+                
+            }
+
+            this.moves.push(CODE_MOVE_LEFT);
+
+            this.reset()
+
+            this.cases = new_position;
+
+        }
+
+        return can_move;
+
+    }
+
+    moveEnRight(){
+
+        let can_move = true;
+
+        for(var i=0;i<this.cases.length;i++){
+
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
+
+            if(case_suiv!=null){
+
+                if(case_suiv.isTaken===true){
+
+                    if(case_suiv.tkBy!=this){
+                    
+                        can_move = false;
+                        break;
+
+                    }
+
+                }
+
+            } else {
+
+                can_move = false;
+                break;
+
+            }
+
+        }
+
+        if(can_move){
+
+            var new_position = [];
+            
+            for(var i=0;i<this.cases.length;i++){
+
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
+                
+            }
+
+            this.moves.push(CODE_MOVE_RIGHT);
+
+            this.reset()
+
+            this.cases = new_position;
+
+        }
+
+        return can_move;
+
+    }
+
+    copy(){
+
+        this.reset();
+        
+        let new_env = generateNewEnv(this.environement);
+        
+        let cr = new Carre(generateNewCases(this.cases,new_env),this.colors,new_env)
+        
+        if(this.moves.length!=0){
+
+            cr.moves = [...this.moves];
+
+        }
+
+        return cr;
+
+    }
+
+}
+
+class Bar{
+
+    constructor(positions,color=default_bar_color,shape,environement){
+
+        this.cases = positions;
+        this.colors = color;
+        this.type = shape;
+        this.typeMax = 4;
+        this.environement = environement;
+        this.moves = [];
+
+    }
+
+    plantGrownd(){
+
+        for(let i=0;i<this.cases.length;i++){
+
+            this.cases[i].color = this.colors;
+            this.cases[i].isTaken = true;
+            this.cases[i].tkBy = this;
+
+        }
+
+    }
+
+    reset(){
+
+        for(let i=0;i<this.cases.length;i++){
+
+            this.cases[i].color = default_case_color;
+            this.cases[i].isTaken = false;
+            this.cases[i].tkBy = null;
+
+        }
+
+    }
+
+    moveEnBas(){
+
+        let cases_les_plus_bas = [];
+
+        for(let i=0;i<this.cases.length;i++){
+
+            if (cases_les_plus_bas.length!=0){
+
+                if(this.cases[i].nbr_lg>cases_les_plus_bas[0].nbr_lg){
+
+                    cases_les_plus_bas = [this.cases[i]]
+
+                } else if(this.cases[i].nbr_lg==cases_les_plus_bas[0].nbr_lg){
+
+                    cases_les_plus_bas.push(this.cases[i])
+
+                }
+
+            } else {
+
+                cases_les_plus_bas.push(this.cases[i])
+
+            }
+
+        }
+
+        let can_move = true;
+
+        for(var i=0;i<cases_les_plus_bas.length;i++){
+
+            const case_suiv = getCaseByNbr(cases_les_plus_bas[i].nbr_col,cases_les_plus_bas[i].nbr_lg+1,this.environement);
+
+            if(case_suiv!=null){
+
+                if(case_suiv.isTaken===true){
+
+                    can_move = false;
+
+                }
+
+            } else {
+
+                can_move = false;
+                break;
+
+            }
+
+        }
+
+        if(can_move){
+
+            var new_position = [];
+            
+            for(var i=0;i<this.cases.length;i++){
+
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
+                
+
+            }
+
+            this.moves.push(CODE_MOVE_BAS);
 
             this.reset()
 
@@ -362,7 +451,7 @@ class Bar{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -392,9 +481,11 @@ class Bar{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
+
+            this.moves.push(CODE_MOVE_LEFT);
 
             this.reset()
 
@@ -402,7 +493,9 @@ class Bar{
 
         }
 
-}
+        return can_move;
+
+    }
 
     moveEnRight(){
 
@@ -410,7 +503,7 @@ class Bar{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -440,15 +533,19 @@ class Bar{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
+
+            this.moves.push(CODE_MOVE_RIGHT);
 
             this.reset()
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -476,7 +573,7 @@ class Bar{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+2,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+2,this.environement)];
 
             let transformeable = true
 
@@ -509,11 +606,15 @@ class Bar{
 
                 this.cases = new_pos;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.type = 1;
 
                 //this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==2 && this.type==1){
 
@@ -537,7 +638,7 @@ class Bar{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-2,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-2,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement)];
 
             let transformeable = true
 
@@ -572,9 +673,13 @@ class Bar{
 
                 this.type = 2;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==3 && this.type==2){
 
@@ -598,7 +703,7 @@ class Bar{
 
             const element_of_new_type = this.cases[1];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-2,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-2,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement)];
 
             let transformeable = true
 
@@ -631,11 +736,15 @@ class Bar{
 
                 this.cases = new_pos;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.type = 3
 
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         }
 
@@ -661,7 +770,7 @@ class Bar{
 
             const element_of_new_type = this.cases[1];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+2,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+2,element_of_new_type.nbr_lg,this.environement)];
 
             let transformeable = true
 
@@ -694,27 +803,47 @@ class Bar{
 
                 this.cases = new_pos;
 
-                this.type = 0
+                this.type = 0;
+
+                this.moves.push(CODE_ROTATE);
 
                 this.plantGrownd();
 
             }
 
+            return transformeable;
+
         }
 
     }
 
+    copy(){
+
+        this.reset();
+        let new_env = generateNewEnv(this.environement);
+        let br = new Bar(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env)
+        if(this.moves.length!=0){
+
+            br.moves = [...this.moves];
+
+        }
+
+        return br;
+
+    }
 
 }
 
 class Lobject{
 
-    constructor(positions,color=default_lobject_color,shape){
+    constructor(positions,color=default_lobject_color,shape,environement){
 
         this.cases = positions;
         this.colors = color;
         this.type = shape;
-        this.typeMax = 3;
+        this.typeMax = 4;
+        this.environement = environement;
+        this.moves = [];
 
     }
 
@@ -748,7 +877,7 @@ class Lobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
@@ -773,7 +902,7 @@ class Lobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
@@ -781,6 +910,8 @@ class Lobject{
             this.reset()
 
             this.cases = new_position;
+
+            this.moves.push(CODE_MOVE_BAS);
 
         }
 
@@ -794,7 +925,7 @@ class Lobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -824,15 +955,19 @@ class Lobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
             this.reset()
 
+            this.moves.push(CODE_MOVE_LEFT);
+
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -842,7 +977,7 @@ class Lobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -872,15 +1007,19 @@ class Lobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_RIGHT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -932,7 +1071,7 @@ class Lobject{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement)];
 
             let transformeable = true;
 
@@ -966,9 +1105,13 @@ class Lobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
 
         } else if(type==2 && this.type==1){
@@ -1017,7 +1160,7 @@ class Lobject{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,this.environement)];
 
             let transformeable = true
 
@@ -1052,9 +1195,13 @@ class Lobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==3 && this.type==2){
 
@@ -1078,7 +1225,7 @@ class Lobject{
 
             const element_of_new_type = this.cases[1];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement)];
 
             let transformeable = true
 
@@ -1112,9 +1259,13 @@ class Lobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==0 && this.type==3){
 
@@ -1162,7 +1313,7 @@ class Lobject{
 
             const element_of_new_type = this.cases[2];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement)];
 
             let transformeable = true
 
@@ -1197,24 +1348,48 @@ class Lobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
 
+            return transformeable;
+
         }
 
-    } 
+    }
+
+    copy(){
+
+        this.reset();
+
+        let new_env = generateNewEnv(this.environement);
+
+        let lo = new Lobject(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env)
+        
+        if(this.moves.length!=0){
+
+            lo.moves = [...this.moves];
+
+        }
+
+        return lo;
+
+    }
 
 }
 
 class Oobject{
 
-    constructor(positions,color=default_oobject_color,shape){
+    constructor(positions,color=default_oobject_color,shape,environement){
 
         this.cases = positions;
         this.colors = color;
         this.type = shape;
-        this.typeMax = 3;
+        this.typeMax = 4;
+        this.environement = environement;
+        this.moves = [];
 
     }
 
@@ -1248,7 +1423,7 @@ class Oobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
@@ -1273,12 +1448,14 @@ class Oobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_BAS);
 
             this.cases = new_position;
 
@@ -1294,7 +1471,7 @@ class Oobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -1324,15 +1501,19 @@ class Oobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_LEFT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -1342,7 +1523,7 @@ class Oobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -1372,15 +1553,19 @@ class Oobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
             this.reset()
 
+            this.moves.push(CODE_MOVE_RIGHT);
+
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -1432,7 +1617,7 @@ class Oobject{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,this.environement)];
 
             let transformeable = true;
 
@@ -1466,9 +1651,13 @@ class Oobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
 
         } else if(type==2 && this.type==1){
@@ -1517,7 +1706,7 @@ class Oobject{
 
             const element_of_new_type = this.cases[2];
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement)];
 
             let transformeable = true
 
@@ -1552,9 +1741,13 @@ class Oobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==3 && this.type==2){
 
@@ -1578,7 +1771,7 @@ class Oobject{
 
             const element_of_new_type = this.cases[1];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement)];
 
             let transformeable = true
 
@@ -1612,9 +1805,13 @@ class Oobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
+
+            return transformeable;
 
         } else if(type==0 && this.type==3){
 
@@ -1662,7 +1859,7 @@ class Oobject{
 
             const element_of_new_type = this.cases[2];
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,this.environement)];
 
             let transformeable = true
 
@@ -1697,11 +1894,33 @@ class Oobject{
 
                 this.type = type;
 
+                this.moves.push(CODE_ROTATE);
+
                 this.plantGrownd();
 
             }
 
+            return transformeable;
+
         }
+
+    }
+
+    copy(){
+
+        this.reset();
+
+        let new_env = generateNewEnv(this.environement);
+
+        let ob = new Oobject(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env)
+
+        if(this.moves.length!=0){
+
+            ob.moves = [...this.moves];
+
+        }
+
+        return ob;
 
     }
 
@@ -1709,12 +1928,14 @@ class Oobject{
 
 class Sobject{
 
-    constructor(positions,color=default_sobject_color,shape){
+    constructor(positions,color=default_sobject_color,shape,environement){
 
         this.cases = positions;
         this.colors = color;
         this.type = shape;
-        this.typeMax = 3;
+        this.typeMax = 4;
+        this.environement = environement;
+        this.moves = [];
 
     }
 
@@ -1748,15 +1969,13 @@ class Sobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
                 if(case_suiv.isTaken===true && case_suiv.tkBy!=this){
 
                     can_move = false;
-                    print("noo")
-                    print(case_suiv)
 
                 }
 
@@ -1775,10 +1994,12 @@ class Sobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
+
+            this.moves.push(CODE_MOVE_BAS);
 
             this.reset()
 
@@ -1796,7 +2017,7 @@ class Sobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -1826,15 +2047,19 @@ class Sobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
+
+            this.moves.push(CODE_MOVE_LEFT);
 
             this.reset()
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -1844,7 +2069,7 @@ class Sobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -1874,15 +2099,19 @@ class Sobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_RIGHT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -2084,6 +2313,8 @@ class Sobject{
 
             this.type = type_sp;
 
+            this.moves.push(CODE_ROTATE);
+
             if(draw){
 
                 this.plantGrownd();
@@ -2102,36 +2333,54 @@ class Sobject{
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
 
         } else if(type==2 && this.type==1){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==3 && this.type==2){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==0 && this.type==3){
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         }
+
+    }
+
+    copy(){
+
+        this.reset();
+        
+        let new_env = generateNewEnv(this.environement);
+        
+        let so = new Sobject(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env);
+        
+        if(this.moves.length!=0){
+
+            so.moves = [...this.moves];
+
+        }
+
+        return so;
 
     }
 
@@ -2139,12 +2388,14 @@ class Sobject{
 
 class Zobject{
     
-    constructor(positions,color=default_zobject_color,shape){
+    constructor(positions,color=default_zobject_color,shape,environement){
 
         this.cases = positions;
         this.colors = color;
         this.type = shape;
-        this.typeMax = 3;
+        this.typeMax = 4;
+        this.moves = [];
+        this.environement = environement;
 
     }
 
@@ -2178,7 +2429,7 @@ class Zobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
@@ -2203,12 +2454,14 @@ class Zobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_BAS);
 
             this.cases = new_position;
 
@@ -2224,7 +2477,7 @@ class Zobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -2254,15 +2507,19 @@ class Zobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_LEFT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -2272,7 +2529,7 @@ class Zobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -2302,15 +2559,19 @@ class Zobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_RIGHT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -2512,6 +2773,8 @@ class Zobject{
 
             this.type = type_sp;
 
+            this.moves.push(CODE_ROTATE);
+
             if(draw){
 
                 this.plantGrownd();
@@ -2530,36 +2793,56 @@ class Zobject{
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg-1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
 
         } else if(type==2 && this.type==1){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==3 && this.type==2){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==0 && this.type==3){
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg-1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         }
+
+    }
+
+    copy(){
+
+
+        this.reset();
+        
+        let new_env = generateNewEnv(this.environement);
+
+        let zo = new Zobject(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env)
+
+        if(this.moves.length!=0){
+
+            zo.moves = [...this.moves];
+
+        }
+
+        return zo;
+
 
     }
 
@@ -2567,12 +2850,14 @@ class Zobject{
 
 class InvTobject{
 
-    constructor(positions,color=default_invtobject_color,shape){
+    constructor(positions,color=default_invtobject_color,shape,environement){
 
         this.cases = positions;
         this.colors = color;
         this.type = shape;
-        this.typeMax = 3;
+        this.typeMax = 4;
+        this.environement = environement;
+        this.moves = [];
 
     }
 
@@ -2606,7 +2891,7 @@ class InvTobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement);
 
             if(case_suiv!=null){
 
@@ -2631,12 +2916,14 @@ class InvTobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col,this.cases[i].nbr_lg+1,this.environement));
                 
 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_BAS);
 
             this.cases = new_position;
 
@@ -2652,7 +2939,7 @@ class InvTobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -2682,15 +2969,19 @@ class InvTobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col-1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_LEFT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -2700,7 +2991,7 @@ class InvTobject{
 
         for(var i=0;i<this.cases.length;i++){
 
-            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object);
+            const case_suiv = getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement);
 
             if(case_suiv!=null){
 
@@ -2730,15 +3021,19 @@ class InvTobject{
             
             for(var i=0;i<this.cases.length;i++){
 
-                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,all_cases_object));
+                new_position.push(getCaseByNbr(this.cases[i].nbr_col+1,this.cases[i].nbr_lg,this.environement));
                 
             }
 
-            this.reset()
+            this.reset();
+
+            this.moves.push(CODE_MOVE_RIGHT);
 
             this.cases = new_position;
 
         }
+
+        return can_move;
 
     }
 
@@ -2938,6 +3233,8 @@ class InvTobject{
 
             this.cases = n_pos;
 
+            this.moves.push(CODE_ROTATE);
+
             this.type = type_sp;
 
             if(draw){
@@ -2958,36 +3255,55 @@ class InvTobject{
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
 
         } else if(type==2 && this.type==1){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==3 && this.type==2){
 
             const element_of_new_type = this.getPivotFromType(this.type);
             
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg+1,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         } else if(type==0 && this.type==3){
 
             const element_of_new_type = this.getPivotFromType(this.type);
 
-            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,all_cases_object),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,all_cases_object),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,all_cases_object)];
+            var new_pos = [getCaseByNbr(element_of_new_type.nbr_col-1,element_of_new_type.nbr_lg,this.environement),element_of_new_type,getCaseByNbr(element_of_new_type.nbr_col,element_of_new_type.nbr_lg-1,this.environement),getCaseByNbr(element_of_new_type.nbr_col+1,element_of_new_type.nbr_lg,this.environement)];
 
-            this.applyNewPos(new_pos,true,type);
+            return this.applyNewPos(new_pos,true,type);
 
         }
+
+    }
+
+    copy(){
+
+        this.reset();
+        
+        let new_env = generateNewEnv(this.environement);
+        
+        let inv = new InvTobject(generateNewCases(this.cases,new_env),this.colors,this.type+1-1,new_env)
+
+        if(this.moves.length!=0){
+
+            inv.moves = [...this.moves];
+
+        }
+
+        return inv;
+
 
     }
 
@@ -3027,6 +3343,617 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
 
 }
 
+function generateNewEnv(env){
+
+    let new_table = []
+
+    for(let i=0;i<env.length;i++){
+
+        new_table.push(env[i].copy());
+
+    }
+
+    return new_table;
+
+}
+
+function generateNewCases(cases,env){
+
+    let new_table = []
+
+    for(let i=0;i<cases.length;i++){
+
+        new_table.push(getCaseByNbr(cases[i].nbr_col,cases[i].nbr_lg,env));
+
+    }
+
+    return new_table;
+
+}
+
+</script>
+
+<script>
+
+let el = null;
+
+class Navigate{
+
+    constructor(piece){
+
+        this.piece = piece;
+        this.final_positions = [];
+        this.final_pos_nbr = 0;
+        //0-left,1-right,2-rotation
+
+    }
+
+    start(table_moves){
+
+        for(let i=0;i<table_moves.length;i++){
+
+            let act_move = table_moves[i];
+            let new_piece = this.piece.copy()
+            this.piece.plantGrownd();
+
+
+            el = new_piece
+
+            let moving = null;
+
+            if(act_move==0){
+
+                moving = new_piece.moveEnLeft();
+                
+                if(moving){
+                    
+                    new_piece.plantGrownd();
+                
+                }
+
+            } else if(act_move==1){
+
+                moving = new_piece.moveEnRight();
+
+                if(moving){
+                    
+                    new_piece.plantGrownd();
+                
+                }
+
+            } else if(act_move==2){
+
+                if(!Carre.prototype.isPrototypeOf(new_piece)){
+                    
+                    if(new_piece.type+1<new_piece.typeMax){
+
+                        moving = new_piece.makeRotation(new_piece.type+1);
+                    
+                    } else {
+
+                        moving = new_piece.makeRotation(0);
+
+                    }
+
+                    if(moving){
+                        
+                        new_piece.plantGrownd();
+                    
+                    }
+
+                }
+
+            } else if(act_move==3){
+
+                moving = true;
+
+            }
+
+            if(moving){
+
+                let can_move_down = new_piece.moveEnBas();
+
+                if(act_move==3 && can_move_down){
+
+                    new_piece.plantGrownd();
+
+                }
+                
+                if(can_move_down!=false){
+
+                    new_piece.plantGrownd();
+
+                    let createNav = true;
+
+                    for(let i=0;i<parent_navigator.length;i++){
+
+                        if(compareEnv(parent_navigator[i],new_piece.environement)){
+
+                            createNav = false;
+                            //print("happened");
+                            break;
+
+                        }
+
+                    }
+
+                    if(createNav){
+
+                        let navigation = new Navigate(new_piece);
+                        parent_navigator.push(new_piece.environement);
+                        navigation.start(table_moves);
+                        this.final_positions = this.final_positions.concat(navigation.final_positions);
+
+                    }
+
+                } else {
+                    
+                    this.final_positions.push(new_piece);
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+function compareEnv(env1,env2){
+
+    for(let i=0;i<env1.length && i<env2.length;i++){
+
+        if(!env1[i].isEqual(env2[i])){
+
+            return false;
+
+        }
+
+    }
+
+    return true;
+
+}
+
+</script>
+
+<script>
+
+    function givePoints(prec_env,new_env){
+
+        const DIFF_HEIGHT = getTopHeight(prec_env)[1] - getTopHeight(new_env)[1];
+        const DIFF_HOLES = getHoles(new_env) - getHoles(prec_env);
+        const LINES_COMPL = getCompletedLines(new_env);
+        const DIFF_CASE = getIsoletedSpaceinLine(new_env) - getIsoletedSpaceinLine(prec_env);
+        const DIFF_COL = isolatedCol(new_env) - isolatedCol(prec_env);
+        const DIFF_DEC = getDecalages(new_env) - getDecalages(prec_env);
+
+        return COEF_HEIGHT*DIFF_HEIGHT + COEF_HOLES*DIFF_HOLES - COEF_LINES*LINES_COMPL + COEF_ISOL_CASE*DIFF_CASE + COEF_ISOL_COL*DIFF_COL + COEF_DEC*DIFF_DEC;
+
+    }
+
+    function visualizeDiff(piece1,piece2,env){
+
+        print("Piece 1 - Piece 2 - Neutre");
+
+        let hg_pc1 = getTopHeight(piece1.environement)[1];
+        let hg_pc2 = getTopHeight(piece2.environement)[1];
+        let hg_env = getTopHeight(env)[1];
+
+        print("Height : "+hg_pc1+"-"+hg_pc2+"-"+hg_env+"|"+(hg_env-hg_pc1)+"/"+(hg_env-hg_pc2));
+
+        let els_pc1 = getHoles(piece1.environement);
+        let els_pc2 = getHoles(piece2.environement);
+        let els_env = getHoles(env);
+
+        print("Holes : "+els_pc1+"-"+els_pc2+"-"+els_env+"|"+(els_pc1-els_env)+"/"+(els_pc2-els_env));
+
+        els_pc1 = getIsoletedSpaceinLine(piece1.environement);
+        els_pc2 = getIsoletedSpaceinLine(piece2.environement);
+        els_env = getIsoletedSpaceinLine(env);
+
+        print("Isolated Space in line : "+els_pc1+"-"+els_pc2+"-"+els_env+"|"+(els_pc1-els_env)+"/"+(els_pc2-els_env));
+
+        els_pc1 = isolatedCol(piece1.environement);
+        els_pc2 = isolatedCol(piece2.environement);
+        els_env = isolatedCol(env);
+
+        print("Isolated col : "+els_pc1+"-"+els_pc2+"-"+els_env+"|"+(els_pc1-els_env)+"/"+(els_pc2-els_env));
+
+        els_pc1 = getDecalages(piece1.environement);
+        els_pc2 = getDecalages(piece2.environement);
+        els_env = getDecalages(env);
+
+        print("Decalage : "+els_pc1+"-"+els_pc2+"-"+els_env+"|"+(els_pc1-els_env)+"/"+(els_pc2-els_env));
+
+    }
+
+    function getTopHeight(env){
+
+        for(let y=1;y<dim_tetris[1]+1;y++){
+
+            for(let x=1;x<dim_tetris[0]+1;x++){
+
+                let act_cass = getCaseByNbr(x,y,env);
+
+                if(act_cass.isTaken==true){
+
+                    return [x,y];
+
+                }
+
+            }
+
+        }
+
+        return [...dim_tetris]
+
+    }
+
+    function getHoles(env){
+
+        let nbr_hole = 0;
+
+        for(let y=1;y<dim_tetris[1]+1;y++){
+
+            for(let x=1;x<dim_tetris[0]+1;x++){
+
+                let act_case = getCaseByNbr(x,y,env);
+
+                if(!act_case.isTaken){
+
+                    let isHole = false;
+
+                    for(let h=y-1;h>0 && !isHole;h--){
+
+                        let act_case2 = getCaseByNbr(x,h,env);
+
+                        if(act_case2.isTaken){
+
+                            isHole = true;
+                            nbr_hole++;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return nbr_hole;
+
+    }
+
+    function getCompletedLines(env){
+
+        let nbr_compl_lines = 0;
+
+        for(let lg_act=dim_tetris[1];lg_act>0;lg_act--){
+
+            let cases_of_lg = 0;
+
+            for(let i=1;i<=dim_tetris[0];i++){
+
+                let act_case = getCaseByNbr(i,lg_act,env);
+                
+                if(act_case.isTaken){
+
+                    cases_of_lg++;
+
+                }
+
+            }
+
+            if(cases_of_lg==dim_tetris[0]){
+
+                nbr_compl_lines++;
+
+            }
+
+        }
+
+        return nbr_compl_lines;
+
+    }
+
+    function getIsoletedSpaceinLine(env){
+
+        let isolated_case = 0;
+
+        for(let y=1;y<=dim_tetris[1];y++){
+
+            for(let x=1;x<=dim_tetris[0];x++){
+
+                let left_case = getCaseByNbr(x-1,y,env);
+                let right_case = getCaseByNbr(x+1,y,env);
+
+                let act_case = getCaseByNbr(x,y,env);
+                
+                if(!act_case.isTaken){
+
+                    if(left_case!=null && right_case!=null){
+
+                        if(left_case.isTaken && right_case.isTaken){
+
+                            if(!thereIsTakenCaseAbove(act_case,env)){
+
+                                isolated_case++;
+
+                            }
+
+                            
+
+                        }
+
+                    } else if(right_case!=null){
+
+                        if(right_case.isTaken){
+
+                            if(!thereIsTakenCaseAbove(act_case,env)){
+
+                                isolated_case++;
+
+                            }
+
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        return isolated_case;
+
+    }
+
+    function isolatedCol(env){
+
+        let nbr_tot = 0;
+
+        let isolated_col = 0;
+
+        for(let y=1;y<=dim_tetris[1];y++){
+
+            for(let x=1;x<=dim_tetris[0];x++){
+
+                let left_case = getCaseByNbr(x-1,y,env);
+                let right_case = getCaseByNbr(x+1,y,env);
+
+                let act_case = getCaseByNbr(x,y,env);
+                
+                if(!act_case.isTaken){
+
+                    if(left_case!=null && right_case!=null){
+
+                        if((left_case.isTaken || true) && right_case.isTaken){
+
+                            if(checkHautBas([act_case.nbr_col,act_case.nbr_lg],env)){
+
+                                isolated_col++;
+
+                            }
+
+                        }
+
+                    } else if(right_case!=null){
+
+                        if(right_case.isTaken){
+
+                            if(checkHautBas([act_case.nbr_col,act_case.nbr_lg],env)){
+
+                                isolated_col++;
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return isolated_col;
+
+    }
+
+    function eliminateLines(env){
+
+        let act_env = generateNewEnv(env);
+
+        let there_is_a_filled_line = checkFilledLines(act_env);
+
+        while(there_is_a_filled_line!=null){
+
+            deleteLine(there_is_a_filled_line,act_env);
+            there_is_a_filled_line = checkFilledLines(act_env);
+
+        }
+
+        return act_env;
+
+    }
+
+    function checkHautBas(pos,env){
+
+        let isProbl = false;
+
+        let case_haut = getCaseByNbr(pos[0],pos[1]-1,env);
+        let case_bas = getCaseByNbr(pos[0],pos[1]+1,env);
+
+        if(case_haut!=null && case_bas!=null){
+
+            if(!case_haut.isTaken && !case_bas.isTaken){
+
+                let case_left_h = getCaseByNbr(pos[0]-1,pos[1]-1,env);
+                let case_right_h = getCaseByNbr(pos[0]+1,pos[1]-1,env);
+
+                let case_left_b = getCaseByNbr(pos[0]-1,pos[1]+1,env);
+                let case_right_b = getCaseByNbr(pos[0]+1,pos[1]+1,env);
+
+                if(case_left_h!=null && case_right_h!=null){
+
+                    if((case_left_h.isTaken || true) && case_right_h.isTaken){
+
+                        if(case_left_b!=null && case_right_b!=null){
+                        
+                            if((case_left_b.isTaken || true) && case_right_b.isTaken){
+
+                                isProbl = true;
+
+                            }
+
+                        } 
+
+                    }
+
+                } else if(case_right_h!=null){
+
+                    if(case_right_h.isTaken){
+
+                        if(case_right_b!=null){
+
+                            if(case_right_b.isTaken){
+
+                                isProbl = true;
+
+                            }
+
+                        } else {
+
+                            isProbl = true;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return isProbl;
+
+    }
+
+    function thereIsTakenCaseAbove(case_,env){
+
+        for(let y=case_.nbr_lg-1;y>0;y--){
+
+            if(getCaseByNbr(case_.nbr_col,y,env).isTaken==true){
+
+                return true;
+
+            }
+
+        }
+
+        return false;
+
+    }
+
+    function getDecalages(env){
+
+        let nbr_decalage = 0;
+
+        for(y=1;y<=dim_tetris[1];y++){
+
+            for(x=1;x<=dim_tetris[0];x++){
+
+                let act_cs = getCaseByNbr(x,y,env);
+
+                if(act_cs.isTaken){
+
+                    let cs_h = getCaseByNbr(x,y-1,env);
+
+                    if(cs_h!=null){
+
+                        if(!cs_h.isTaken){
+
+                            let cs_hr = getCaseByNbr(x+1,y-1,env);
+                            let cs_hl = getCaseByNbr(x-1,y-1,env);
+
+                            if(cs_hr!=null){
+
+                                if(cs_hr.isTaken && act_cs.tkBy!=cs_hr.tkBy){
+
+                                    let act_cs_left = getCaseByNbr(act_cs.nbr_col-1,act_cs.nbr_lg,env);
+
+                                    if(act_cs_left!=null){
+
+                                        if(!act_cs_left.isTaken){
+
+                                            nbr_decalage++;
+
+                                        }
+
+
+                                    }
+
+                                }
+
+                            }
+
+                            if(cs_hl!=null){
+
+                                if(cs_hl.isTaken && act_cs.tkBy!=cs_hl.tkBy){
+
+                                    let act_cs_right = getCaseByNbr(act_cs.nbr_col+1,act_cs.nbr_lg,env);
+
+                                    if(act_cs_right!=null){
+
+                                        if(!act_cs_right.isTaken){
+
+                                            nbr_decalage++;
+
+                                        }
+
+
+                                    }
+                                    //print("pl")
+
+                                }
+
+                            }
+
+                        
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return nbr_decalage;
+
+    }
+
+</script>
+
+<script>
+
+    function sleep(millisecondsDuration){
+
+        return new Promise((resolve)=>{
+            setTimeout(resolve,millisecondsDuration);
+        })
+
+    }
 
 </script>
 
@@ -3035,13 +3962,21 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
     var all_cases_object = [];
 
     var obj_move = null;
+    var obj_move2 = null;
 
+    var bar = null;
     var lobject = null;
     var carre2 = null;
     var oobject = null;
     var sobject = null;
     var zobject = null;
     var invTobject = null;
+    let navig = null;
+    let left_test = null;
+    let i_gl = 0;
+    var best_pos_pc = null;
+    var anc_env = null;
+    var all_pos_pc = null;
 
     function generateCases(x,y,ec,r,w_h,quant){
 
@@ -3059,17 +3994,160 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
 
     }
 
-    function descendreObj(){
+    function checkFilledLines(env){
 
-        let obj_stat = obj_move.moveEnBas();
-        obj_move.plantGrownd();
+        for(let lg_act=dim_tetris[1];lg_act>0;lg_act--){
 
-        if(obj_stat===false){
+            let cases_of_lg = [];
 
-            obj_move = generateRandomPiece();
-            obj_move.plantGrownd();
+            for(let i=1;i<=dim_tetris[0];i++){
+
+                let act_case = getCaseByNbr(i,lg_act,env);
+                
+                if(act_case.isTaken){
+
+                    cases_of_lg.push(act_case);
+
+                }
+
+            }
+
+            if(cases_of_lg.length==dim_tetris[0]){
+
+                /*for(let i=0;i<cases_of_lg.length;i++){
+
+                    cases_of_lg[i].color = [122,10,15];
+
+                }*/
+
+                return lg_act;
+
+            }
 
         }
+
+        return null;
+
+    }
+
+    function deleteLine(lg,env){
+
+        for(let c=1;c<=dim_tetris[0];c++){
+
+            let act_case = getCaseByNbr(c,lg,env);
+            act_case.reset();
+
+        }
+
+        for(let i=lg-1;i>=1;i--){
+
+            for(let c=1;c<=dim_tetris[0];c++){
+
+                let act_case = getCaseByNbr(c,i,env);
+
+                let next_case = getCaseByNbr(c,i+1,env);
+
+                //print(next_case);
+
+                if(act_case.isTaken){
+
+                    next_case.beLike(act_case);
+                    act_case.reset(); 
+
+                }
+
+            }
+
+        }
+
+    }
+
+    async function descendreObj(){
+
+        //let obj_stat = obj_move.moveEnBas();
+
+        for(let h=0;h<best_pos_pc.moves.length;h++){
+
+            let mv = best_pos_pc.moves[h];
+
+            if(mv==CODE_MOVE_BAS){
+
+                obj_move.moveEnBas();
+
+            } else if(mv==CODE_MOVE_LEFT){
+
+                obj_move.moveEnLeft();
+
+            } else if(mv==CODE_MOVE_RIGHT){
+
+                obj_move.moveEnRight();
+
+            } else if(mv==CODE_ROTATE){
+
+                if(obj_move.type+1<obj_move.typeMax){
+                    
+                    obj_move.makeRotation(obj_move.type+1);
+                
+                } else {
+
+                    obj_move.makeRotation(0);
+
+                }
+
+            }
+
+            obj_move.plantGrownd();
+
+            await sleep(50);
+
+        }
+
+        
+
+        let there_is_a_filled_line = checkFilledLines(all_cases_object);
+
+        while(there_is_a_filled_line!=null){
+
+            deleteLine(there_is_a_filled_line,all_cases_object);
+            clearedLines++;
+            print("Lines : "+clearedLines);
+            there_is_a_filled_line = checkFilledLines(all_cases_object);
+
+        }
+
+        let a = 2;
+
+        anc_env = generateNewEnv(obj_move.environement);
+
+        obj_move = generateRandomPiece();
+        obj_move.plantGrownd(); 
+
+        all_pos_pc = generateAllPossPositions(obj_move.copy());
+
+        best_pos_pc = sortPoss(anc_env,all_pos_pc)[0];
+
+        descendreObj();
+
+    }
+
+    function sortPoss(anc_env,all_poss){
+
+        let best = [null,1000000];
+
+        for(let i=0;i<all_poss.length;i++){
+
+            let act_pc = all_poss[i];
+            act_pc.plantGrownd();
+
+            if(givePoints(anc_env,act_pc.environement)<best[1]){
+
+                best = [act_pc,givePoints(anc_env,act_pc.environement)];
+
+            }
+
+        }
+
+        return best;
 
     }
 
@@ -3115,43 +4193,314 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
 
     }
 
-    function generateRandomPiece(){
+    function getBottom(piece_cs){
 
-        const choix =  parseInt(random()*7);
-        const the_color = [random(255),random(255),random(255)];
+        let piece = piece_cs.copy();
+        let bottomest_pc = piece.cases[0];
 
-        if(choix==0){
+        for(let a=0;a<piece.cases.length;a++){
 
-            return new Carre(generateCarrePos(),the_color);
+            let cs = piece.cases[a];
 
-        } else if(choix==1){
+            if(cs.nbr_lg>bottomest_pc.nbr_lg){
 
-            return new Bar(generateBarPoss(),the_color,1);
+                bottomest_pc = cs.copy();
 
-        } else if(choix==2){
+            }
 
-            return new Lobject(generateLPoss(),the_color,0);
+        }
 
-        } else if(choix==3){
+        return bottomest_pc;
 
-            return new Oobject(generateOPoss(),the_color,0);
+    }
 
-        } else if(choix==4){
+    function meetSomething(piece_cs){
 
-            return new Sobject(generateSPoss(),the_color,0);
+        let piece = piece_cs.copy();
+        piece.plantGrownd();
 
-        } else if(choix==5){
+        let bottomest_pc = getBottom(piece);
+        let hg_env = null;
 
-            return new Zobject(generateZPoss(),the_color,0);
+        for(let a=0;a<piece.cases.length;a++){
 
-        } else if(choix==6){
+            let cs = piece.cases[a];
 
-            return new InvTobject(generateInvPoss(),the_color,0);
+            if(cs.nbr_lg>bottomest_pc.nbr_lg){
+
+                bottomest_pc = cs.copy();
+
+            }
+
+        }
+
+        piece.reset();
+
+        for(let a=0;a<piece.environement.length;a++){
+
+            let cs = piece.environement[a];
+
+            if(cs.isTaken){
+
+                if(hg_env==null){
+
+                    hg_env = cs.copy();
+
+                } else if(cs.nbr_lg<hg_env.nbr_lg){
+
+                    hg_env = cs.copy();
+                    print("Meet :",hg_env)
+
+                }
+
+            }
+
+        }
+
+        if(hg_env==null){
+
+            return false;
+
+        } else if(hg_env.nbr_lg<=(bottomest_pc.nbr_lg+2)){
+
+            return true;
 
         }
 
     }
 
+    var n = 0;
+
+    function generateLeftPositions(the_piece){
+
+        let max_left = 0;
+        let cont = true;
+        const all_left_env = [];
+        const piece_used = the_piece.copy();
+
+        while(cont){
+
+            if(meetSomething(piece_used)){
+
+                cont = false;
+
+            } else {
+
+                if(!piece_used.moveEnBas()){
+
+                    cont = false;
+                    
+                }
+
+            }
+
+            if(piece_used.moveEnLeft()){
+
+                max_left++;
+
+            } else {
+
+                cont = false;
+
+            }
+
+        }
+
+        cont = true;
+
+        while(!meetSomething(piece_used) && cont){
+
+            cont = piece_used.moveEnBas();
+
+        }
+
+        piece_used.plantGrownd();
+
+        all_left_env.push(piece_used);
+
+        for(let i=max_left-1;i>0;i--){
+
+            let nw_pc = the_piece.copy();
+
+            for(j=0;j<i;j++){
+
+                if(!nw_pc.moveEnLeft()){
+
+                    break;
+
+                }
+
+                if(meetSomething(nw_pc) || !nw_pc.moveEnBas()){
+
+                    break;
+
+                }
+
+            }
+
+            cont = true;
+
+            while(!meetSomething(nw_pc) && cont){
+
+                cont = nw_pc.moveEnBas();
+
+            }
+
+            nw_pc.plantGrownd();
+
+            all_left_env.push(nw_pc);
+
+        }
+
+        return all_left_env;
+
+    }
+
+    function generateRightPositions(the_piece){
+
+        let max_rg = 0;
+        let cont = true;
+        const all_left_env = [];
+        const piece_used = the_piece.copy();
+
+        while(cont){
+
+            if(meetSomething(piece_used)){
+
+                cont = false;
+
+            } else {
+
+                if(!piece_used.moveEnBas()){
+
+                    cont = false;
+                    
+                }
+
+            }
+
+            if(piece_used.moveEnRight()){
+
+                max_rg++;
+
+            } else {
+
+                cont = false;
+
+            }
+
+        }
+
+        cont = true;
+
+        while(!meetSomething(piece_used) && cont){
+
+            cont = piece_used.moveEnBas();
+
+        }
+
+        piece_used.plantGrownd();
+
+        all_left_env.push(piece_used);
+
+        for(let i=max_rg-1;i>0;i--){
+
+            let nw_pc = the_piece.copy();
+
+            for(j=0;j<i;j++){
+
+                if(!nw_pc.moveEnRight()){
+
+                    break;
+
+                }
+
+                if(meetSomething(nw_pc) || !nw_pc.moveEnBas()){
+
+                    break;
+
+                }
+
+            }
+
+            cont = true;
+
+            while(!meetSomething(nw_pc) && cont){
+
+                cont = nw_pc.moveEnBas();
+
+            }
+
+            nw_pc.plantGrownd();
+
+            all_left_env.push(nw_pc)
+
+        }
+
+        return all_left_env;
+
+    }
+
+    function generateMiddlePosition(the_piece){
+
+        let piece_used = the_piece.copy();
+
+        cont = true;
+
+        while(!meetSomething(piece_used) && cont){
+
+            cont = piece_used.moveEnBas();
+            piece_used.plantGrownd();
+
+        }
+
+        piece_used.plantGrownd();
+
+        return piece_used;
+
+    }
+
+    function generateRandomPiece(){
+  
+        let choix =  parseInt(random()*7);
+        //choix = 2;
+        const the_color = [random(255),random(255),random(255)];
+
+        /*const table = [new InvTobject(generateInvPoss(),the_color,0),new InvTobject(generateInvPoss(),the_color,0),new Bar(generateBarPoss(),the_color,1)];
+
+        return table[choix];*/
+
+        if(choix==0){
+
+            return new Carre(generateCarrePos(),the_color,all_cases_object);
+
+        } else if(choix==1){
+
+            return new Bar(generateBarPoss(),the_color,1,all_cases_object);
+
+        } else if(choix==2){
+
+            return new Lobject(generateLPoss(),the_color,0,all_cases_object);
+
+        } else if(choix==3){
+
+            return new Oobject(generateOPoss(),the_color,0,all_cases_object);
+
+        } else if(choix==4){
+
+            return new Sobject(generateSPoss(),the_color,0,all_cases_object);
+
+        } else if(choix==5){
+
+            return new Zobject(generateZPoss(),the_color,0,all_cases_object);
+
+        } else if(choix==6){
+
+            return new InvTobject(generateInvPoss(),the_color,0,all_cases_object);
+
+        }
+
+    }
 
     function keyPressed(){
 
@@ -3181,7 +4530,232 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
             obj_move.moveEnRight();
             obj_move.plantGrownd();
 
+        } else if(keyCode == DOWN_ARROW){
+
+            for(let i=0;i<dim_tetris[1];i++){
+
+                obj_move.moveEnBas();
+                obj_move.plantGrownd();
+
+            }
+
         }
+
+    }
+
+    async function simulateMoves(nv){
+
+        let cases_dep = generateNewEnv(all_cases_object);
+
+        for(let i=0;i<nv.final_positions.length;i++){
+                
+            all_cases_object = generateNewEnv(cases_dep);
+
+            let ob = generateRandomPiece();
+            ob.plantGrownd();
+
+            let pc = nv.final_positions[i][nv.final_positions[i].length-1];
+
+            for(let h=0;h<pc.moves.length;h++){
+
+                let mv = pc.moves[h];
+
+                if(mv==CODE_MOVE_BAS){
+
+                    ob.moveEnBas();
+
+                } else if(mv==CODE_MOVE_LEFT){
+
+                    ob.moveEnLeft();
+
+                } else if(mv==CODE_MOVE_RIGHT){
+
+                    ob.moveEnRight();
+
+                } else if(mv==CODE_ROTATE){
+
+                    if(ob.type+1<ob.typeMax){
+                        
+                        ob.makeRotation(ob.type+1);
+                    
+                    } else {
+
+                        ob.makeRotation(0);
+
+                    }
+
+                }
+
+                ob.plantGrownd();
+
+                await sleep(200);
+
+            }
+
+        }
+
+    }
+
+    async function simulateMovesTable(pieces){
+
+        let cases_dep = generateNewEnv(all_cases_object);
+
+        for(let i=0;i<pieces.length;i++){
+                
+            all_cases_object = generateNewEnv(cases_dep);
+
+            let ob = generateRandomPiece();
+            ob.plantGrownd();
+
+            let pc = pieces[i];
+
+            for(let h=0;h<pc.moves.length;h++){
+
+                let mv = pc.moves[h];
+
+                if(mv==CODE_MOVE_BAS){
+
+                    ob.moveEnBas();
+
+                } else if(mv==CODE_MOVE_LEFT){
+
+                    ob.moveEnLeft();
+
+                } else if(mv==CODE_MOVE_RIGHT){
+
+                    ob.moveEnRight();
+
+                } else if(mv==CODE_ROTATE){
+
+                    if(ob.type+1<ob.typeMax){
+                        
+                        ob.makeRotation(ob.type+1);
+                    
+                    } else {
+
+                        ob.makeRotation(0);
+
+                    }
+
+                }
+
+                ob.plantGrownd();
+
+                await sleep(50);
+
+            }
+
+        }
+
+    }
+
+    function checkSameMoves(pieces){
+
+        for(let i=0;i<pieces.length;i++){
+
+            for(j=0;j<pieces.length;j++){
+
+                if(i!=j){
+
+                    if(pieces[i].moves==pieces[j].moves){
+
+                        return [i,j];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return false;
+
+    }
+
+    function generateAllPossibleStart(piece){
+
+        let all_start = [];
+
+        if(!Carre.prototype.isPrototypeOf(piece)){
+
+            for(let i=0;i<piece.typeMax;i++){
+
+                let left_poss = generateLeftPositions(piece.copy());
+                let rg_poss = generateRightPositions(piece.copy());
+                let ml_poss = generateMiddlePosition(piece.copy());
+
+                all_start = all_start.concat(left_poss);
+                all_start = all_start.concat(rg_poss);
+                all_start.push(ml_poss);
+            
+                if((piece.type+1)<piece.typeMax){
+
+                    piece.makeRotation(piece.type+1);
+
+                } else {
+
+                    piece.makeRotation(0);
+
+                }
+
+            }
+
+        } else {
+
+            let left_poss = generateLeftPositions(piece.copy());
+            let rg_poss = generateRightPositions(piece.copy());
+            let ml_poss = generateMiddlePosition(piece.copy());
+
+            all_start = all_start.concat(left_poss);
+            all_start = all_start.concat(rg_poss);
+            all_start.push(ml_poss);
+
+        }
+
+        return all_start;
+
+
+    }
+
+    function generateAllPossPositions(piece){
+
+        let tot = 0;
+
+        let all_starts = generateAllPossibleStart(piece);
+        let all_positions = [];
+
+        var firstTimestamp = new Date().getTime();
+
+        parent_navigator = [];
+
+        for(let i=0;i<all_starts.length;i++){
+
+            let act_pc = all_starts[i];
+            let nv = new Navigate(act_pc);
+
+            
+
+            nv.start([0,1,2,3]);
+
+            //print("Le temps d'exécution est de : " + result + " millisecondes.")
+            //tot+=result;
+
+            if(nv.final_positions.length>0){
+            
+                all_positions = all_positions.concat(nv.final_positions);
+            
+            }
+
+        }
+
+        var secondTimestamp = new Date().getTime(),
+        result = secondTimestamp - firstTimestamp;
+
+        //print("Le temps d'exécution est de : " + result + " millisecondes.")
+
+        return all_positions;
+        
 
     }
 
@@ -3192,35 +4766,20 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
         const y = (windowHeight - height) / 2;
         
         cnv.position(x, y);
-        generateCases(dep_pos[0],dep_pos[1],ec,rayon,size,dim_tetris)
-
-        //const pos = [getCaseByNbr(3,4,all_cases_object),getCaseByNbr(3,5,all_cases_object),getCaseByNbr(4,5,all_cases_object),getCaseByNbr(5,5,all_cases_object)];
-
-        //const pos = [getCaseByNbr(3,5,all_cases_object),getCaseByNbr(4,5,all_cases_object),getCaseByNbr(5,5,all_cases_object),getCaseByNbr(6,5,all_cases_object)];
-
-        //const pos = [getCaseByNbr(3,4,all_cases_object),getCaseByNbr(3,5,all_cases_object),getCaseByNbr(2,5,all_cases_object),getCaseByNbr(1,5,all_cases_object)];
-
-        //const pos = [getCaseByNbr(3,4,all_cases_object),getCaseByNbr(4,4,all_cases_object),getCaseByNbr(4,5,all_cases_object),getCaseByNbr(5,5,all_cases_object)];
-
-        /*const pos = [getCaseByNbr(3,4,all_cases_object),getCaseByNbr(2,5,all_cases_object),getCaseByNbr(3,5,all_cases_object),getCaseByNbr(4,5,all_cases_object)];
-
-        const pos2 = generateBarPoss();
-    
-        invTobject = new InvTobject(positions=pos,color=default_invtobject_color,shape=0);
-        invTobject.plantGrownd()
-
-        carre2 = new Bar(positions=pos2);
-        carre2.plantGrownd();
-
-        all_obj.push(invTobject)
-        all_obj.push(carre2)*/
+        generateCases(dep_pos[0],dep_pos[1],ec,rayon,size,dim_tetris) 
 
         obj_move = generateRandomPiece();
+        best_pos_pc = generateAllPossPositions(obj_move.copy())[0]
+        //obj_move2 = generateRandomPiece();
         obj_move.plantGrownd();
+
+        //navig = new Navigate(obj_move2.copy(),generateNewEnv(obj_move2.environement),[]);
+
+        //left_test = generateLeftPosition(obj_move)
 
         //setInterval(changeRot,300);
 
-        setInterval(descendreObj,250);
+        descendreObj();
 
     }
     
@@ -3265,6 +4824,5 @@ function getCaseByNbr(nbr_col,nbr_lg,cases){
     }
     
     
-
 
 </script>
